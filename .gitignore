@@ -6,3 +6,5 @@ chroma_db/
 .DS_Store
 node_modules/
 .pytest_cache/
+eval/corpus_analytics.db
+eval/corpus_report.xlsx
