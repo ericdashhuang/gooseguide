@@ -1,5 +1,5 @@
 # GooseGuide
-**Live demo:** https://https://ericdashhuang.github.io/gooseguide/
+**Live demo:** https://ericdashhuang.github.io/gooseguide/
 
 A retrieval-augmented generation (RAG) system that answers questions about starting first year at the University of Waterloo, including co-op, housing, orientation, and campus wellness.
 
