@@ -36,9 +36,10 @@ rag/
 eval/
   generate_questions.py  LLM-generates one ground-truth question per source page
   run_eval.py             measures retrieval recall against those questions
+  analyze_corpus.py       turns eval results into per-page recall, chunk stats, and a SQLite + Excel report
 docs/                    static client-side demo, served by GitHub Pages (see below)
   pure.js                 DOM-free retrieval/formatting helpers, unit tested directly
-tests/                   unit tests for rag/chunking.py
+tests/                   unit tests for rag/chunking.py and eval/analyze_corpus.py
 .github/workflows/       weekly corpus-refresh + CI test runs (see below)
 ```
 
@@ -92,6 +93,25 @@ python eval/run_eval.py
 Run it the same way as `run_eval.py`, after building the index.
 This is a single illustrative example, not a statistical benchmark - see the script's own docstring for the exact methodology.
 
+### Turning eval results into a report
+
+`run_eval.py` prints one recall number to the terminal, which is enough to catch a regression but not enough to see *why* retrieval is weak on a specific page. `eval/analyze_corpus.py` takes the same inputs (the chunk export + the question set) and turns them into a structured report instead:
+
+```bash
+python rag/export_chunks.py   # if you haven't already - writes docs/data/chunks.json
+python rag/build_index.py     # if you haven't already
+python eval/analyze_corpus.py
+```
+
+It computes, with pandas/NumPy:
+- per-page recall (which specific pages the index serves badly, not just the overall percentage)
+- chunk-length statistics (mean, std, p95) across the corpus
+- a flagged list of pages below a recall threshold, worth re-chunking or re-titling
+
+then persists chunk metadata and per-question results as SQLite tables (`eval/corpus_analytics.db`), pulls a per-page summary back out with a single SQL join/aggregate query, and writes everything to a multi-sheet Excel workbook (`eval/corpus_report.xlsx`) plus the raw tables, instead of only stdout.
+
+Every input path is a flag (`--chunks-file`, `--questions-file`, `--db`, `--output`, `--top-k`, `--weak-threshold`), so the same script works against a different corpus or question set without editing code - see `python eval/analyze_corpus.py --help`.
+
 ## Keeping the corpus fresh
 
 uwaterloo.ca is a real site that changes — co-op requirements get updated, dates change year to year. `.github/workflows/refresh-corpus.yml` re-runs the ingest pipeline weekly and opens a PR if any of the 73 pages actually changed, so stale content gets caught automatically instead of silently going unnoticed. It never auto-merges — a human reviews the diff first, same as every other change to this repo.
@@ -100,7 +120,8 @@ uwaterloo.ca is a real site that changes — co-op requirements get updated, dat
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests/ -v            # rag/chunking.py - paragraph boundaries, overlap, hard-splitting oversized paragraphs
+pytest tests/ -v            # rag/chunking.py (paragraph boundaries, overlap, hard-splitting oversized paragraphs)
+                             # eval/analyze_corpus.py (recall aggregation, chunk stats, weak-page flagging)
 
 node --test docs/pure.test.js   # docs/pure.js - similarity ranking, answer formatting/XSS-safety, conversation history
 ```
