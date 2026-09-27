@@ -58,7 +58,7 @@ test("buildContext() numbers each chunk and includes its source", () => {
 test("buildHistoryText() includes only prior turns that already have an answer", () => {
   const turns = [
     { question: "How many co-op terms do I need?", answer: "Three." },
-    { question: "What about abroad?", answer: null }, // no answer yet - should be excluded
+    { question: "What about abroad?", answer: null }, // no answer yet, should be excluded
   ];
   const history = buildHistoryText(turns, 2);
   assert.ok(history.includes("Q: How many co-op terms do I need?\nA: Three."));
@@ -70,7 +70,7 @@ test("buildHistoryText() excludes the current turn itself, not just future ones"
     { question: "First question", answer: "First answer" },
     { question: "Second question", answer: "Second answer" },
   ];
-  // uptoTurnIndex=1 means "turns before index 1" - i.e. only the first turn
+  // uptoTurnIndex=1 means "turns before index 1", ie only the first turn
   const history = buildHistoryText(turns, 1);
   assert.ok(history.includes("First question"));
   assert.ok(!history.includes("Second question"));

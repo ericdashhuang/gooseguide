@@ -1,6 +1,6 @@
-// Pure, DOM-free helpers used by app.js. Kept in their own module (no
+// pure, dom free helpers used by app.js, kept in their own module (no
 // document/localStorage/fetch access) so they can be unit tested directly
-// with Node's built-in test runner, with nothing to mock out.
+// with node's built in test runner, with nothing to mock out
 
 export function dot(a, b) {
   let s = 0;
@@ -16,10 +16,10 @@ export function escapeHtml(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// Strips stray tool-citation artifacts some models emit (e.g. 【source†L4-L9】)
-// and renders basic **bold** markdown, since the answer is plain text from the model.
-// HTML-escapes first, so this is safe to feed straight to innerHTML even though
-// the input ultimately traces back to scraped web content the model saw.
+// strips stray tool citation artifacts some models emit (eg 【source†l4-l9】)
+// and renders basic **bold** markdown, since the answer is plain text from the model
+// html escapes first, so this is safe to feed straight to innerHTML even though
+// the input ultimately traces back to scraped web content the model saw
 export function formatAnswer(raw) {
   const cleaned = raw
     .replace(/【[^】]*】/g, "")
@@ -36,10 +36,10 @@ export function buildContext(turnChunks) {
     .join("\n\n");
 }
 
-// Prior turns that got an answer, formatted as plain Q/A text so the LLM can
-// refer back to what it already told you this conversation. Takes the turns
+// prior turns that got an answer, formatted as plain Q/A text so the llm can
+// refer back to what it already told you this conversation, takes the turns
 // array explicitly (rather than closing over module state) so it's testable
-// on its own.
+// on its own
 export function buildHistoryText(turns, uptoTurnIndex) {
   return turns
     .slice(0, uptoTurnIndex)

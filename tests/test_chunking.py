@@ -1,7 +1,7 @@
-"""Unit tests for rag/chunking.py - the step between ingest and embedding.
+"""unit tests for rag/chunking.py, the step between ingest and embedding
 
-These are pure-function tests: no network, no embedding model, no API key.
-Run with: pytest
+these are pure function tests no network, no embedding model, no api key
+run with pytest
 """
 import sys
 from pathlib import Path
@@ -32,9 +32,9 @@ def test_long_body_splits_at_paragraph_boundary_not_mid_sentence():
     chunks = chunk_text(body)
 
     assert len(chunks) == 2
-    # First chunk is exactly the first paragraph - not truncated mid-way.
+    # first chunk is exactly the first paragraph, not truncated mid way
     assert chunks[0] == para1
-    # Second chunk contains the second paragraph fully intact.
+    # second chunk contains the second paragraph fully intact
     assert chunks[1].endswith(para2)
 
 
@@ -46,26 +46,26 @@ def test_overlap_prefixes_each_chunk_after_the_first():
     chunks = chunk_text(body)
 
     # chunks[1] should start with the last CHUNK_OVERLAP characters of chunks[0]'s
-    # source paragraph, so retrieval doesn't lose context at the boundary.
+    # source paragraph, so retrieval doesn't lose context at the boundary
     assert chunks[1].startswith(para1[-CHUNK_OVERLAP:])
     assert chunks[1][CHUNK_OVERLAP] == "\n"
 
 
 def test_oversized_single_paragraph_gets_hard_split():
-    # One "paragraph" (no newlines) well over the chunk size.
+    # one "paragraph" (no newlines) well over the chunk size
     body = "Z" * (CHUNK_SIZE * 2 + 200)
     chunks = chunk_text(body)
-    # A single huge paragraph must still become multiple chunks, not one giant blob.
+    # a single huge paragraph must still become multiple chunks, not one giant blob
     assert len(chunks) > 1
 
 
 def test_no_chunk_wildly_exceeds_size_plus_overlap():
-    # A realistic-ish multi-paragraph body of varying paragraph lengths.
+    # a realistic ish multiparagraph body of varying paragraph lengths
     paragraphs = [f"Paragraph {i}: " + ("word " * (i * 20)) for i in range(1, 10)]
     body = "\n".join(paragraphs)
     chunks = chunk_text(body)
-    # Overlap prefixes at most CHUNK_OVERLAP chars plus one newline onto a
-    # chunk that was already at most CHUNK_SIZE before the prefix was added.
+    # overlap prefixes at most CHUNK_OVERLAP chars plus one newline onto a
+    # chunk that was already at most CHUNK_SIZE before the prefix was added
     for c in chunks:
         assert len(c) <= CHUNK_SIZE + CHUNK_OVERLAP + 1
 

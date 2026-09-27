@@ -1,17 +1,17 @@
-"""Turn raw retrieval results into a structured report: per-page recall,
-chunk-length statistics, and a flagged list of pages the index serves badly.
+"""turn raw retrieval results into a structured report per page recall,
+chunk length statistics, and a flagged list of pages the index serves badly
 
-This is a reusable, parameterized replacement for the print-only summary in
-run_eval.py -- point it at any chunk export + question set (not just this
-corpus) via --chunks-file / --questions-file, and it writes a multi-sheet
-Excel report plus a queryable SQLite database instead of just stdout.
+this is a reusable, parameterized replacement for the print only summary in
+run_eval.py, point it at any chunk export + question set (not just this
+corpus) via --chunks-file / --questions-file, and it writes a multisheet
+excel report plus a queryable sqlite database instead of just stdout
 
-Usage:
+usage
   python eval/analyze_corpus.py
   python eval/analyze_corpus.py --chunks-file docs/data/chunks.json \
       --questions-file eval/questions.json --output eval/corpus_report.xlsx
 
-Requires: rag/build_index.py has already been run (needs the index).
+requires rag/build_index.py has already been run (needs the index)
 """
 import argparse
 import json
@@ -34,8 +34,8 @@ DEFAULT_WEAK_THRESHOLD = 0.5
 
 
 def load_chunks_df(path: Path) -> pd.DataFrame:
-    """Load an exported chunk file (rag/export_chunks.py's output) into a
-    DataFrame with a derived char_len column, one row per chunk."""
+    """load an exported chunk file (rag/export_chunks.py's output) into a
+    DataFrame with a derived char_len column, one row per chunk"""
     records = json.loads(Path(path).read_text())
     df = pd.DataFrame(records)
     df["char_len"] = df["text"].str.len()
@@ -47,7 +47,7 @@ def load_questions_df(path: Path) -> pd.DataFrame:
 
 
 def compute_chunk_stats(chunks_df: pd.DataFrame) -> dict:
-    """Derived variables over chunk length, using NumPy for the arithmetic."""
+    """derived variables over chunk length, using NumPy for the arithmetic"""
     lengths = chunks_df["char_len"].to_numpy()
     return {
         "count": int(lengths.size),
@@ -60,10 +60,10 @@ def compute_chunk_stats(chunks_df: pd.DataFrame) -> dict:
 
 
 def run_retrieval(questions_df: pd.DataFrame, retrieve_fn, k: int) -> pd.DataFrame:
-    """Run retrieval for every question and record a hit/miss per row.
+    """run retrieval for every question and record a hit/miss per row
 
     retrieve_fn is injected (rather than imported directly) so this is
-    testable with a fake retriever and no live Chroma index.
+    testable with a fake retriever and no live chroma index
     """
     rows = []
     for q in questions_df.to_dict("records"):
@@ -81,8 +81,8 @@ def run_retrieval(questions_df: pd.DataFrame, retrieve_fn, k: int) -> pd.DataFra
 
 
 def compute_page_recall(results_df: pd.DataFrame) -> pd.DataFrame:
-    """Per-page recall: of the questions whose ground-truth answer lives on
-    this page, how many actually retrieved it?"""
+    """per page recall of the questions whose ground truth answer lives on
+    this page, how many actually retrieved it"""
     grouped = results_df.groupby(["source_url", "source_title"], as_index=False).agg(
         n_questions=("hit", "size"),
         hits=("hit", "sum"),
@@ -93,15 +93,15 @@ def compute_page_recall(results_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def flag_weak_pages(page_recall_df: pd.DataFrame, threshold: float) -> pd.DataFrame:
-    """Pages whose recall is below threshold -- candidates for re-chunking,
-    re-titling, or otherwise improving retrievability."""
+    """pages whose recall is below threshold, candidates for rechunking,
+    retitling, or otherwise improving retrievability"""
     weak = page_recall_df[page_recall_df["recall"] < threshold]
     return weak.sort_values("recall").reset_index(drop=True)
 
 
 def persist_to_sqlite(chunks_df: pd.DataFrame, results_df: pd.DataFrame, db_path: Path) -> None:
-    """Write chunk metadata and eval results as SQLite tables so they can be
-    queried with SQL instead of only held in memory."""
+    """write chunk metadata and eval results as sqlite tables so they can be
+    queried with sql instead of only held in memory"""
     con = sqlite3.connect(db_path)
     try:
         chunks_df.assign(chunk_index=chunks_df.get("chunk_index", 0)).to_sql(
@@ -134,8 +134,8 @@ ORDER BY n_questions DESC, c.source_url
 
 
 def query_summary_from_sqlite(db_path: Path) -> pd.DataFrame:
-    """Extract a per-page summary by joining the two SQLite tables with a
-    single SQL query, rather than re-doing the join in pandas."""
+    """extract a per page summary by joining the two sqlite tables with a
+    single sql query, rather than redoing the join in pandas"""
     con = sqlite3.connect(db_path)
     try:
         return pd.read_sql_query(SQL_SUMMARY_QUERY, con)
