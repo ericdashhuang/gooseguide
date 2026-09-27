@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "rag"))
-from query import TOP_K, retrieve  # noqa: E402
+from retrieval import TOP_K, retrieve  # noqa: E402
 
 HERE = Path(__file__).parent
 DEFAULT_CHUNKS_PATH = HERE.parent / "docs" / "data" / "chunks.json"

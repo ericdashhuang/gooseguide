@@ -195,7 +195,7 @@ function wireGenerateButton(turnIndex, question, turnChunks, generateBtn, errorE
       turns[turnIndex].answer = answer;
       answerEl.innerHTML = formatAnswer(answer);
     } catch (err) {
-      errorEl.textContent = `${err.message} (if this looks like a CORS/network error, the provider may not allow direct browser calls -- try the other provider, or run rag/query.py locally instead).`;
+      errorEl.textContent = `${err.message} (if this looks like a CORS/network error, the provider may not allow direct browser calls -- try the other provider).`;
       errorEl.hidden = false;
     } finally {
       generateBtn.disabled = false;
