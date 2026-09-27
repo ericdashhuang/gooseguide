@@ -1,8 +1,8 @@
 import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";
 import { dot, buildSystemPrompt, formatAnswer, buildContext, buildHistoryText } from "./pure.js";
 
-// Let transformers.js fetch the model from the HF Hub CDN (default) and cache
-// it with the browser's Cache API, so repeat visits skip the download.
+// let transformers.js fetch the model from the hf hub cdn (default) and cache
+// it with the browser's cache api, so repeat visits skip the download
 env.allowLocalModels = false;
 
 const MODEL_ID = "Xenova/all-MiniLM-L6-v2";
@@ -24,11 +24,11 @@ const rememberKeyInput = document.getElementById("rememberKey");
 
 let extractor = null;
 let chunks = [];
-let vectors = []; // parallel array of Float32Array, normalized
+let vectors = []; // parallel array of float32array, normalized
 
-// Each turn: { question, chunks: [{chunk, score}], answer: string|null }
-// Kept around so a later question's retrieval and a later answer's prompt
-// can both refer back to what was asked and answered before it.
+// each turn { question, chunks [{chunk, score}], answer string|null }
+// kept around so a later question's retrieval and a later answer's prompt
+// can both refer back to what was asked and answered before it
 let turns = [];
 
 function setStatus(text) {
@@ -56,7 +56,7 @@ function saveCachedVectors(vecs) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(vecs.map((v) => Array.from(v))));
   } catch {
-    // Storage full or unavailable -- fine, we just re-embed next visit.
+    // storage full or unavailable, fine, we just reembed next visit
   }
 }
 
@@ -160,9 +160,9 @@ function syncModelField() {
 }
 
 providerSelect.addEventListener("change", syncModelField);
-// Some browsers restore a <select>'s value on reload/back-forward without
-// firing "change", which would leave the model field out of sync - so also
-// sync once up front against whatever the provider field actually shows.
+// some browsers restore a <select>'s value on reload/back-forward without
+// firing "change", which would leave the model field out of sync, so also
+// sync once up front against whatever the provider field actually shows
 syncModelField();
 
 function wireGenerateButton(turnIndex, question, turnChunks, generateBtn, errorEl, answerEl) {
@@ -261,9 +261,9 @@ qform.addEventListener("submit", async (e) => {
   askBtn.textContent = "Searching...";
 
   const turnIndex = turns.length;
-  // Prepend the previous question (not its answer - keeps the embedding
-  // input short) so a short follow-up like "what about abroad?" retrieves
-  // against the topic it's actually continuing, not just the fragment.
+  // prepend the previous question (not its answer, keeps the embedding
+  // input short) so a short follow up like "what about abroad?" retrieves
+  // against the topic it's actually continuing, not just the fragment
   const retrievalText = turnIndex === 0 ? question : `${turns[turnIndex - 1].question}\n${question}`;
 
   const qVec = await embed(retrievalText);

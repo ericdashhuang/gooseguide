@@ -1,8 +1,8 @@
-"""Build the vector index: chunk every file in data/raw/, embed each chunk with
-Chroma's bundled local embedding model (all-MiniLM-L6-v2 via onnxruntime -- no
-API key or GPU needed), and persist the collection to ./chroma_db.
+"""build the vector index chunk every file in data/raw/, embed each chunk with
+chroma's bundled local embedding model (all-MiniLM-L6-v2 via onnxruntime, no
+api key or gpu needed), and persist the collection to ./chroma_db
 
-Usage: python rag/build_index.py
+usage python rag/build_index.py
 """
 from pathlib import Path
 
@@ -22,8 +22,8 @@ def main():
         raise SystemExit(f"No files found in {RAW_DIR} -- run data/ingest.py first.")
 
     client = chromadb.PersistentClient(path=str(DB_DIR))
-    # Fresh build every run, so re-running after editing the corpus doesn't
-    # leave stale chunks behind.
+    # fresh build every run, so rerunning after editing the corpus doesn't
+    # leave stale chunks behind
     try:
         client.delete_collection(COLLECTION_NAME)
     except Exception:
@@ -42,7 +42,7 @@ def main():
             })
 
     print(f"Embedding {len(documents)} chunks from {len(raw_files)} pages...")
-    # Chroma batches and embeds internally when you call add().
+    # chroma batches and embeds internally when you call add()
     batch = 100
     for i in range(0, len(ids), batch):
         collection.add(

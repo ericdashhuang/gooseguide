@@ -1,6 +1,6 @@
-"""Turn a raw page's text into overlapping chunks small enough to embed and
+"""turn a raw page's text into overlapping chunks small enough to embed and
 retrieve individually, while keeping each chunk on paragraph boundaries where
-possible so we don't cut a sentence in half mid-thought.
+possible so we don't cut a sentence in half mid thought
 """
 from dataclasses import dataclass
 
@@ -17,7 +17,7 @@ class Chunk:
 
 
 def parse_raw_file(text: str) -> tuple[str, str, str]:
-    """Split a data/raw/*.txt file into (url, title, body)."""
+    """split a data/raw/*.txt file into (url, title, body)"""
     lines = text.splitlines()
     url = lines[0].removeprefix("URL: ").strip()
     title = lines[1].removeprefix("TITLE: ").strip()
@@ -41,7 +41,7 @@ def chunk_text(body: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) 
         if len(para) <= size:
             current = para
         else:
-            # A single paragraph longer than the chunk size: hard-split it.
+            # a single paragraph longer than the chunk size hard split it
             for i in range(0, len(para), size - overlap):
                 chunks.append(para[i:i + size])
             current = ""
@@ -49,8 +49,8 @@ def chunk_text(body: str, size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) 
     if current:
         chunks.append(current)
 
-    # Add overlap by prefixing each chunk (after the first) with the tail of
-    # the previous one, so retrieval doesn't lose context at a chunk boundary.
+    # add overlap by prefixing each chunk (after the first) with the tail of
+    # the previous one, so retrieval doesn't lose context at a chunk boundary
     overlapped = []
     for i, c in enumerate(chunks):
         if i == 0:

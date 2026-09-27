@@ -1,9 +1,9 @@
-"""Export the chunked corpus (text + metadata, no vectors) as JSON for the
-static web demo. The browser embeds these itself with transformers.js, so the
-same embedding model produces both the corpus vectors and the query vector --
-no risk of a Python-export vs. browser-export mismatch.
+"""export the chunked corpus (text + metadata, no vectors) as json for the
+static web demo, the browser embeds these itself with transformers.js, so the
+same embedding model produces both the corpus vectors and the query vector
+no risk of a python export vs browser export mismatch
 
-Usage: python rag/export_chunks.py
+usage python rag/export_chunks.py
 """
 import json
 from pathlib import Path

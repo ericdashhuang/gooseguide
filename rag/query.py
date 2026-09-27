@@ -1,11 +1,11 @@
-"""Ask a question, retrieve the most relevant chunks from the vector index,
-and (if an API key is available) ask an LLM to answer using only those chunks.
+"""ask a question, retrieve the most relevant chunks from the vector index,
+and (if an api key is available) ask an llm to answer using only those chunks
 
-Usage:
-  python rag/query.py "How many co-op work terms do I need to complete?"
+usage
+  python rag/query.py "how many coop work terms do i need to complete?"
 
-Without ANTHROPIC_API_KEY set, this still runs the retrieval step and prints
-the chunks it would have used, so you can inspect retrieval quality on its own.
+without ANTHROPIC_API_KEY set, this still runs the retrieval step and prints
+the chunks it would have used, so you can inspect retrieval quality on its own
 """
 import os
 import sys

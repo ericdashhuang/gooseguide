@@ -1,13 +1,13 @@
-"""Measure retrieval accuracy against eval/questions.json.
+"""measure retrieval accuracy against eval/questions.json
 
-For each question, retrieves the top-K chunks from the vector index and
-checks whether the expected source page shows up among them (recall@K) --
+for each question, retrieves the top k chunks from the vector index and
+checks whether the expected source page shows up among them (recall@k)
 a chunk from the right page is useful even if it's not the exact original
-chunk, so page-level recall is the metric that matters here.
+chunk, so page level recall is the metric that matters here
 
-Usage: python eval/run_eval.py
-Requires: rag/build_index.py has already been run (needs the index), and
-eval/questions.json exists (run eval/generate_questions.py first).
+usage python eval/run_eval.py
+requires rag/build_index.py has already been run (needs the index), and
+eval/questions.json exists (run eval/generate_questions.py first)
 """
 import json
 import sys

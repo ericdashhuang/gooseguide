@@ -1,15 +1,15 @@
-"""Generate an evaluation question for each source page, using an LLM.
+"""generate an evaluation question for each source page, using an llm
 
-Reads every file in data/raw/, asks an LLM to write one realistic question a
-first-year student would ask that this specific page answers, and saves the
-result as eval/questions.json -- a small ground-truth set for measuring
-retrieval accuracy (see eval/run_eval.py).
+reads every file in data/raw/, asks an llm to write one realistic question a
+first year student would ask that this specific page answers, and saves the
+result as eval/questions.json, a small ground truth set for measuring
+retrieval accuracy (see eval/run_eval.py)
 
-Needs an API key: set ANTHROPIC_API_KEY or GROQ_API_KEY (e.g. in a .env
-file). Groq's free tier is enough for this -- ~73 short requests, one per
-source page.
+needs an api key set ANTHROPIC_API_KEY or GROQ_API_KEY (eg in a .env
+file), groq's free tier is enough for this, ~73 short requests, one per
+source page
 
-Usage: python eval/generate_questions.py
+usage python eval/generate_questions.py
 """
 import json
 import os
@@ -63,8 +63,8 @@ def ask_groq(prompt: str, max_retries: int = 5) -> str:
             timeout=30,
         )
         if resp.status_code == 429 and attempt < max_retries - 1:
-            # Free tier throttles harder than you'd expect - back off and retry
-            # instead of losing the whole run. Respect Retry-After if Groq sends one.
+            # free tier throttles harder than you'd expect, back off and retry
+            # instead of losing the whole run, respect retry after if groq sends one
             wait = float(resp.headers.get("retry-after", 2 ** attempt))
             print(f"    Rate limited, waiting {wait:.0f}s before retrying...", file=sys.stderr)
             time.sleep(wait)
@@ -89,9 +89,9 @@ def main():
     if not raw_files:
         raise SystemExit(f"No files found in {RAW_DIR} -- run data/ingest.py first.")
 
-    # Resume support: if questions.json already has entries (e.g. a previous
-    # run got rate-limited partway through), skip pages already done instead
-    # of re-spending API calls and overwriting good results.
+    # resume support if questions.json already has entries (eg a previous
+    # run got rate limited partway through), skip pages already done instead
+    # of respending api calls and overwriting good results
     questions = json.loads(OUT_PATH.read_text()) if OUT_PATH.exists() else []
     done_urls = {q["source_url"] for q in questions}
     if done_urls:
@@ -103,8 +103,8 @@ def main():
             continue
         question = ask(title, body)
         questions.append({"question": question, "source_url": url, "source_title": title})
-        # Save after every question, not just at the end, so a crash or
-        # rate-limit mid-run only costs the one in-flight request.
+        # save after every question, not just at the end, so a crash or
+        # rate limit mid run only costs the one in flight request
         OUT_PATH.write_text(json.dumps(questions, indent=2))
         print(f"  [{i}/{len(raw_files)}] {title}: {question}")
 

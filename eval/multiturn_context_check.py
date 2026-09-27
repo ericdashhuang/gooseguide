@@ -1,24 +1,24 @@
-"""One-off measurement backing the "prepending the previous question fixes
-multi-turn context loss" claim in the README and portfolio writeup.
+"""one off measurement backing the "prepending the previous question fixes
+multiturn context loss" claim in the readme and portfolio writeup
 
-Not part of the CI suite (see run_eval.py for that) - this is a single,
-hand-picked representative example, not a statistical benchmark. It exists so
-the improvement is a real, reproducible number instead of an assumed one.
+not part of the ci suite (see run_eval.py for that), this is a single,
+hand picked representative example, not a statistical benchmark, it exists so
+the improvement is a real, reproducible number instead of an assumed one
 
-Methodology:
-  1. Load the already-built Chroma index (run rag/build_index.py first).
-  2. Take a representative follow-up pair: a first question ("How many co-op
-     work terms do I need to complete?") and a short, ambiguous follow-up
-     ("What about abroad?") that only makes sense given the first question.
-  3. Embed the follow-up two ways -- alone, and with the first question
-     prepended (exactly what docs/app.js does before calling retrieve()) --
-     using the same embedding model and cosine-similarity math the browser
-     app uses (normalized vectors, dot product).
-  4. Compare each version's similarity to the chunks of the page that
-     actually answers the follow-up ("Work abroad co-op requirements") and
-     show where that page lands in the top-5 results either way.
+methodology
+  1. load the already built chroma index (run rag/build_index.py first)
+  2. take a representative follow up pair a first question ("how many coop
+     work terms do i need to complete?") and a short, ambiguous follow up
+     ("what about abroad?") that only makes sense given the first question
+  3. embed the follow up two ways, alone, and with the first question
+     prepended (exactly what docs/app.js does before calling retrieve())
+     using the same embedding model and cosine similarity math the browser
+     app uses (normalized vectors, dot product)
+  4. compare each version's similarity to the chunks of the page that
+     actually answers the follow up ("work abroad coop requirements") and
+     show where that page lands in the top-5 results either way
 
-Usage: python eval/multiturn_context_check.py
+usage python eval/multiturn_context_check.py
 """
 import sys
 from pathlib import Path

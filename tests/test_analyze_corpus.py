@@ -1,9 +1,9 @@
-"""Unit tests for eval/analyze_corpus.py.
+"""unit tests for eval/analyze_corpus.py
 
-Pure-function tests over small, hand-built DataFrames: no network, no
-Chroma index, no LLM calls. Expected values are computed independently
+pure function tests over small, hand built DataFrames no network, no
+chroma index, no llm calls, expected values are computed independently
 (with the stdlib `statistics` module rather than numpy) so the test
-isn't just re-stating the implementation.
+isn't just restating the implementation
 """
 import statistics
 import sys
@@ -40,8 +40,8 @@ def questions_df():
 
 
 def fake_retrieve_always_hits_a_never_b(question: str, k: int):
-    # Every question retrieves a chunk from page A only, regardless of the
-    # question text -- so questions about A "hit" and questions about B miss.
+    # every question retrieves a chunk from page a only, regardless of the
+    # question text, so questions about a "hit" and questions about b miss
     return [{"text": "x", "meta": {"source_url": "https://example.com/a", "source_title": "Page A"}, "distance": 0.1}]
 
 

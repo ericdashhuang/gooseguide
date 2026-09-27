@@ -1,8 +1,8 @@
 name: Tests
 
-# Runs the unit tests automatically on every push and PR, so a regression in
+# runs the unit tests automatically on every push and pr, so a regression in
 # chunking.py or the retrieval/formatting helpers in docs/pure.js shows up
-# as a failed check instead of going unnoticed until a real question hits it.
+# as a failed check instead of going unnoticed until a real question hits it
 
 on:
   push:

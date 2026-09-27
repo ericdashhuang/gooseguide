@@ -1,15 +1,15 @@
 name: Refresh corpus
 
-# Keeps GooseGuide's corpus from silently going stale as uwaterloo.ca pages
-# change over time. Re-runs the ingest pipeline weekly and, if anything
-# actually changed, opens a PR instead of touching main directly -- scraped
+# keeps gooseguide's corpus from silently going stale as uwaterloo.ca pages
+# change over time, reruns the ingest pipeline weekly and, if anything
+# actually changed, opens a pr instead of touching main directly, scraped
 # content gets a human glance before it goes live, same as every other
-# change to this repo.
+# change to this repo
 
 on:
   schedule:
-    - cron: "0 6 * * 0" # every Sunday at 06:00 UTC
-  workflow_dispatch: {} # allow a manual run from the Actions tab too
+    - cron: "0 6 * * 0" # every sunday at 06:00 utc
+  workflow_dispatch: {} # allow a manual run from the actions tab too
 
 permissions:
   contents: write
