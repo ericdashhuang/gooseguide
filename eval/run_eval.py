@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "rag"))
-from query import TOP_K, retrieve  # noqa: E402
+from retrieval import TOP_K, retrieve  # noqa: E402
 
 HERE = Path(__file__).parent
 QUESTIONS_PATH = HERE / "questions.json"

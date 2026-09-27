@@ -14,7 +14,8 @@ This project fixes that by retrieving real content from uwaterloo.ca before gene
 1. **Ingest** (`data/ingest.py`) — fetches 73 public uwaterloo.ca pages (co-op, housing, orientation, international students, campus wellness, registrar) and strips them down to clean article text.
 2. **Chunk** (`rag/chunking.py`) — splits each page into ~900-character overlapping chunks along paragraph boundaries, so a chunk rarely cuts a sentence in half.
 3. **Embed + index** (`rag/build_index.py`) — converts every chunk into a vector using a local embedding model (`all-MiniLM-L6-v2`, bundled with Chroma, runs on CPU, no API key needed) and stores it in a persistent [Chroma](https://www.trychroma.com/) vector database.
-4. **Retrieve + generate** (`rag/query.py`) — embeds the question the same way, finds the most similar chunks by vector search, and passes them to an LLM as context so it can answer from real source material and cite where the answer came from.
+4. **Retrieve** (`rag/retrieval.py`) — embeds the question the same way and finds the most similar chunks by vector search.
+5. **Generate** (`docs/app.js`, in the browser) — passes the retrieved chunks to an LLM as context so it can answer from real source material and cite where the answer came from.
 
 The live demo (see below) additionally supports follow-up questions: a short follow-up like "what about abroad?" gets the previous question prepended before it's embedded for retrieval, so retrieval has enough context to find the right page instead of searching on the fragment alone.
 
@@ -32,7 +33,7 @@ data/
 rag/
   chunking.py            splits page text into overlapping chunks
   build_index.py         embeds chunks and builds the Chroma index
-  query.py                retrieval + generation CLI
+  retrieval.py            vector search over the index (also a small CLI)
   export_chunks.py       exports chunk text (no vectors) for the web demo
 eval/
   generate_questions.py  LLM-generates one ground-truth question per source page
@@ -57,13 +58,13 @@ python data/ingest.py
 # 2. Build the vector index (~30 seconds)
 python rag/build_index.py
 
-# 3. Ask a question
-python rag/query.py "How many co-op work terms do I need to complete?"
+# 3. Inspect what retrieval returns for a question
+python rag/retrieval.py "How many co-op work terms do I need to complete?"
 ```
 
-Retrieval works with no setup.
-Generation needs an LLM key: copy `.env.example` to `.env` and add `ANTHROPIC_API_KEY=...`.
-Without a key, `query.py` still prints the retrieved chunks so you can inspect retrieval quality on its own — that's deliberate, since retrieval and generation are genuinely separate steps worth being able to test independently.
+Retrieval works with no setup and needs no API key.
+Answer generation happens in the live demo, where you paste your own key.
+The only Python script that calls an LLM is `eval/generate_questions.py`, which reads `ANTHROPIC_API_KEY` or `GROQ_API_KEY` from a `.env` file (copy `.env.example`).
 
 ## Live demo
 
