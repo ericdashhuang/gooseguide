@@ -1,5 +1,5 @@
 import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";
-import { dot, buildSystemPrompt, formatAnswer, buildContext, buildHistoryText } from "./pure.js";
+import { dot, buildSystemPrompt, formatAnswer, buildContext, buildSummarySystemPrompt, buildSummaryPrompt, buildRetrievalText, buildUserContent } from "./pure.js";
 
 // let transformers.js fetch the model from the hf hub cdn (default) and cache
 // it with the browser's cache api, so repeat visits skip the download
@@ -26,9 +26,10 @@ let extractor = null;
 let chunks = [];
 let vectors = []; // parallel array of float32array, normalized
 
-// each turn { question, chunks [{chunk, score}], answer string|null }
-// kept around so a later question's retrieval and a later answer's prompt
-// can both refer back to what was asked and answered before it
+// each turn { question, chunks [{chunk, score}], answer string|null, summary string|null }
+// summary is a short rolling recap of the conversation up to and including
+// this turn's question, used for retrieval and in the answer prompt so later
+// turns never need the full transcript
 let turns = [];
 
 function setStatus(text) {
@@ -104,7 +105,7 @@ async function init() {
   }
 }
 
-async function callAnthropic(apiKey, model, userContent) {
+async function callAnthropic(apiKey, model, userContent, system = buildSystemPrompt(), maxTokens = 600) {
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -115,8 +116,8 @@ async function callAnthropic(apiKey, model, userContent) {
     },
     body: JSON.stringify({
       model,
-      max_tokens: 600,
-      system: buildSystemPrompt(),
+      max_tokens: maxTokens,
+      system,
       messages: [{ role: "user", content: userContent }],
     }),
   });
@@ -125,7 +126,7 @@ async function callAnthropic(apiKey, model, userContent) {
   return data.content[0].text;
 }
 
-async function callGroq(apiKey, model, userContent) {
+async function callGroq(apiKey, model, userContent, system = buildSystemPrompt()) {
   const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -135,7 +136,7 @@ async function callGroq(apiKey, model, userContent) {
     body: JSON.stringify({
       model,
       messages: [
-        { role: "system", content: buildSystemPrompt() },
+        { role: "system", content: system },
         { role: "user", content: userContent },
       ],
     }),
@@ -165,6 +166,29 @@ providerSelect.addEventListener("change", syncModelField);
 // sync once up front against whatever the provider field actually shows
 syncModelField();
 
+// asks the selected llm for an updated rolling summary, null on any failure
+// (no key yet, network/cors error) so callers fall back to the old behaviour
+async function summarizeConversation(turnIndex, question) {
+  const apiKey = apiKeyInput.value.trim();
+  const model = modelInput.value.trim();
+  if (turnIndex === 0 || !apiKey || !model) return null;
+  const prev = turns[turnIndex - 1];
+  try {
+    const call = PROVIDER_CALLS[providerSelect.value];
+    const summary = await call(
+      apiKey,
+      model,
+      buildSummaryPrompt(prev.summary || prev.question, prev.answer, question),
+      buildSummarySystemPrompt(),
+      150
+    );
+    return summary.trim() || null;
+  } catch (err) {
+    console.warn("summary call failed, falling back to previous question", err);
+    return null;
+  }
+}
+
 function wireGenerateButton(turnIndex, question, turnChunks, generateBtn, errorEl, answerEl) {
   generateBtn.addEventListener("click", async () => {
     const apiKey = apiKeyInput.value.trim();
@@ -187,9 +211,12 @@ function wireGenerateButton(turnIndex, question, turnChunks, generateBtn, errorE
     generateBtn.disabled = true;
     generateBtn.textContent = "Generating...";
     try {
-      const history = buildHistoryText(turns, turnIndex);
-      const context = buildContext(turnChunks);
-      const userContent = `${history ? `Conversation so far:\n${history}\n\n` : ""}Context:\n\n${context}\n\nQuestion: ${question}`;
+      // a follow up asked before a key was entered has no summary yet, the key
+      // is here now so make one before answering
+      if (turnIndex > 0 && !turns[turnIndex].summary) {
+        turns[turnIndex].summary = await summarizeConversation(turnIndex, question);
+      }
+      const userContent = buildUserContent(turns[turnIndex].summary, buildContext(turnChunks), question);
       const call = PROVIDER_CALLS[providerSelect.value];
       const answer = await call(apiKey, model, userContent);
       turns[turnIndex].answer = answer;
@@ -255,16 +282,21 @@ function renderTurn(question, turnChunks, turnIndex) {
 qform.addEventListener("submit", async (e) => {
   e.preventDefault();
   const question = questionInput.value.trim();
-  if (!question || vectors.length === 0) return;
+  // askBtn is disabled while a previous ask (summary call included) is in flight
+  if (!question || vectors.length === 0 || askBtn.disabled) return;
 
   askBtn.disabled = true;
   askBtn.textContent = "Searching...";
 
   const turnIndex = turns.length;
-  // prepend the previous question (not its answer, keeps the embedding
-  // input short) so a short follow up like "what about abroad?" retrieves
-  // against the topic it's actually continuing, not just the fragment
-  const retrievalText = turnIndex === 0 ? question : `${turns[turnIndex - 1].question}\n${question}`;
+  // a short follow up like "what about abroad?" needs the earlier turns to
+  // retrieve against the topic it's actually continuing, so embed a rolling
+  // summary of the conversation instead of the bare fragment
+  if (turnIndex > 0) askBtn.textContent = "Summarizing conversation...";
+  const summary = await summarizeConversation(turnIndex, question);
+  askBtn.textContent = "Searching...";
+  const prevQuestion = turnIndex > 0 ? turns[turnIndex - 1].question : null;
+  const retrievalText = buildRetrievalText(summary, prevQuestion, question, turnIndex);
 
   const qVec = await embed(retrievalText);
   const scored = vectors.map((v, i) => ({ chunk: chunks[i], score: dot(qVec, v) }));
@@ -272,7 +304,7 @@ qform.addEventListener("submit", async (e) => {
   const topResults = scored.slice(0, TOP_K);
 
   renderTurn(question, topResults, turnIndex);
-  turns.push({ question, chunks: topResults, answer: null });
+  turns.push({ question, chunks: topResults, answer: null, summary });
 
   settingsCard.hidden = false;
   questionInput.value = "";
