@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dot, escapeHtml, formatAnswer, buildContext, buildSummaryPrompt, buildRetrievalText, buildUserContent } from "./pure.js";
+import { dot, escapeHtml, formatAnswer, buildContext, buildHistoryText } from "./pure.js";
 
 test("dot() computes the dot product", () => {
   assert.equal(dot([1, 2, 3], [4, 5, 6]), 1 * 4 + 2 * 5 + 3 * 6);
@@ -55,47 +55,27 @@ test("buildContext() numbers each chunk and includes its source", () => {
   assert.ok(context.includes("[2] Source: Co-op rules (https://example.com/b)\nBody B"));
 });
 
-test("buildSummaryPrompt() includes the prior summary, the latest answer and the new question", () => {
-  const prompt = buildSummaryPrompt(
-    "Asked how many co-op terms are required.",
-    "Most programs need five work terms.",
-    "What about for international students?"
-  );
-  assert.ok(prompt.includes("Asked how many co-op terms are required."));
-  assert.ok(prompt.includes("Most programs need five work terms."));
-  assert.ok(prompt.includes("What about for international students?"));
+test("buildHistoryText() includes only prior turns that already have an answer", () => {
+  const turns = [
+    { question: "How many co-op terms do I need?", answer: "Three." },
+    { question: "What about abroad?", answer: null }, // no answer yet, should be excluded
+  ];
+  const history = buildHistoryText(turns, 2);
+  assert.ok(history.includes("Q: How many co-op terms do I need?\nA: Three."));
+  assert.ok(!history.includes("What about abroad?"));
 });
 
-test("buildSummaryPrompt() omits the answer section when the last question was never answered", () => {
-  const prompt = buildSummaryPrompt("Asked about co-op terms.", null, "What about abroad?");
-  assert.ok(!prompt.includes("latest answer"));
-  assert.ok(prompt.includes("What about abroad?"));
+test("buildHistoryText() excludes the current turn itself, not just future ones", () => {
+  const turns = [
+    { question: "First question", answer: "First answer" },
+    { question: "Second question", answer: "Second answer" },
+  ];
+  // uptoTurnIndex=1 means "turns before index 1", ie only the first turn
+  const history = buildHistoryText(turns, 1);
+  assert.ok(history.includes("First question"));
+  assert.ok(!history.includes("Second question"));
 });
 
-test("buildRetrievalText() embeds the summary plus the new question, so constraints accumulate", () => {
-  const text = buildRetrievalText(
-    "International students asking how many co-op terms are required.",
-    "How many co-op terms for international students?",
-    "What about for environment majors?",
-    2
-  );
-  assert.ok(text.includes("International students"));
-  assert.ok(text.includes("What about for environment majors?"));
-});
-
-test("buildRetrievalText() falls back to the previous question when there is no summary", () => {
-  const text = buildRetrievalText(null, "How many co-op terms do I need?", "What about abroad?", 1);
-  assert.equal(text, "How many co-op terms do I need?\nWhat about abroad?");
-});
-
-test("buildRetrievalText() is just the question on the first turn", () => {
-  assert.equal(buildRetrievalText(null, null, "How many co-op terms do I need?", 0), "How many co-op terms do I need?");
-});
-
-test("buildUserContent() includes the summary only when there is one", () => {
-  const withSummary = buildUserContent("Topic: co-op terms.", "CTX", "Q?");
-  assert.ok(withSummary.includes("Conversation summary:\nTopic: co-op terms."));
-  assert.ok(withSummary.includes("Context:\n\nCTX"));
-  assert.ok(withSummary.endsWith("Question: Q?"));
-  assert.ok(!buildUserContent(null, "CTX", "Q?").includes("Conversation summary"));
+test("buildHistoryText() returns an empty string for the very first turn", () => {
+  assert.equal(buildHistoryText([], 0), "");
 });

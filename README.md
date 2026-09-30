@@ -17,10 +17,7 @@ This project fixes that by retrieving real content from uwaterloo.ca before gene
 4. **Retrieve** (`rag/retrieval.py`) — embeds the question the same way and finds the most similar chunks by vector search.
 5. **Generate** (`docs/app.js`, in the browser) — passes the retrieved chunks to an LLM as context so it can answer from real source material and cite where the answer came from.
 
-The live demo (see below) additionally supports follow-up questions: the app keeps a short rolling summary of the conversation (one small LLM call per follow-up, using the provider and key you already entered) and embeds that summary plus the new question for retrieval.
-A follow-up like "what about abroad?" therefore finds the right page, and constraints accumulate across turns: "how many co-op terms?", then "what about international students?", then "what about environment majors?" retrieves on all three.
-The same summary replaces the full Q/A transcript in the answer prompt, so prompt size stays constant however long the chat gets.
-If the summary call can't run (no API key entered yet, or a network error), retrieval falls back to prepending just the previous question.
+The live demo (see below) additionally supports follow-up questions: a short follow-up like "what about abroad?" gets the previous question prepended before it's embedded for retrieval, so retrieval has enough context to find the right page instead of searching on the fragment alone.
 
 No LangChain, no LlamaIndex — every step above is under 100 lines of plain Python, on purpose.
 The goal was to actually understand what a RAG pipeline does, not to call a framework method and trust that it works.
@@ -93,7 +90,7 @@ python eval/run_eval.py
 
 `run_eval.py` reports recall@5 (did the correct source page show up in the top 5 retrieved chunks) and lists which questions missed, so a regression in `rag/chunking.py` or a change to `TOP_K` shows up as a number going down instead of going unnoticed.
 
-`run_eval.py`'s 73 generated questions are all single-turn, so they don't cover the follow-up-question fix described above (prepending the prior question before embedding a follow-up, the simpler approach the rolling summary replaced, which is still the fallback).
+`run_eval.py`'s 73 generated questions are all single-turn, so they don't cover the follow-up-question fix described above (prepending the prior question before embedding a follow-up).
 `eval/multiturn_context_check.py` is a separate, hand-picked measurement of that specific fix: it embeds a representative follow-up ("What about abroad?" after "How many co-op work terms do I need to complete?") both alone and with the prior question prepended, then shows where the actually-correct page ("Work abroad co-op requirements") lands in the top 5 either way.
 Run it the same way as `run_eval.py`, after building the index.
 This is a single illustrative example, not a statistical benchmark - see the script's own docstring for the exact methodology.
@@ -128,7 +125,7 @@ pip install -r requirements-dev.txt
 pytest tests/ -v            # rag/chunking.py (paragraph boundaries, overlap, hard-splitting oversized paragraphs)
                              # eval/analyze_corpus.py (recall aggregation, chunk stats, weak-page flagging)
 
-node --test docs/pure.test.js   # docs/pure.js - similarity ranking, answer formatting/XSS-safety, conversation-summary and retrieval-text builders
+node --test docs/pure.test.js   # docs/pure.js - similarity ranking, answer formatting/XSS-safety, conversation history
 ```
 
 Both suites run automatically on every push and PR via `.github/workflows/tests.yml`. They're plain unit tests (no network, no API key, no browser) - separate from `eval/`, which measures retrieval *accuracy* rather than code correctness.
