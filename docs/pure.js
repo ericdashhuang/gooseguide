@@ -36,30 +36,14 @@ export function buildContext(turnChunks) {
     .join("\n\n");
 }
 
-export function buildSummarySystemPrompt() {
-  return "You maintain a short running summary of a conversation between a student and an assistant about being a first-year student at the University of Waterloo. Given the summary so far, the assistant's latest answer if there is one, and the student's new question, write an updated summary in 1-3 sentences (under 60 words) that captures the topic and every constraint the student has mentioned (program, residency status, co-op stream, and so on), including what the new question asks. Output only the summary.";
-}
-
-// user message for the summarizer call, the answer section is left out when
-// the previous question was never answered (no generate click yet)
-export function buildSummaryPrompt(prevSummary, lastAnswer, newQuestion) {
-  const answerPart = lastAnswer ? `Assistant's latest answer:\n${lastAnswer}\n\n` : "";
-  return `Summary so far:\n${prevSummary}\n\n${answerPart}New question: ${newQuestion}`;
-}
-
-// text that gets embedded for retrieval, the summary already carries every
-// constraint from earlier turns, the question is repeated so its own wording
-// still counts, with no summary (first turn, no api key, or a failed call) it
-// falls back to the old behaviour of prepending just the previous question
-export function buildRetrievalText(summary, prevQuestion, question, turnIndex) {
-  if (summary) return `${summary}\n${question}`;
-  if (turnIndex > 0 && prevQuestion) return `${prevQuestion}\n${question}`;
-  return question;
-}
-
-// user message for the answer call, a short summary stands in for the full
-// prior q/a transcript so the prompt stays the same size however long the chat is
-export function buildUserContent(summary, context, question) {
-  const summaryPart = summary ? `Conversation summary:\n${summary}\n\n` : "";
-  return `${summaryPart}Context:\n\n${context}\n\nQuestion: ${question}`;
+// prior turns that got an answer, formatted as plain Q/A text so the llm can
+// refer back to what it already told you this conversation, takes the turns
+// array explicitly (rather than closing over module state) so it's testable
+// on its own
+export function buildHistoryText(turns, uptoTurnIndex) {
+  return turns
+    .slice(0, uptoTurnIndex)
+    .filter((t) => t.answer)
+    .map((t) => `Q: ${t.question}\nA: ${t.answer}`)
+    .join("\n\n");
 }
